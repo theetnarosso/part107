@@ -422,6 +422,78 @@
       display: block;
     }
 
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      padding: 24px;
+      background: rgba(23, 32, 38, .42);
+    }
+
+    .modal.show {
+      display: grid;
+      place-items: center;
+    }
+
+    .modal-shell {
+      width: min(960px, 100%);
+      max-height: calc(100vh - 48px);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 24px 60px rgba(23, 32, 38, .22);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      display: grid;
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+
+    .modal-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .modal-title-row h2 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .email-meta {
+      display: grid;
+      gap: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .email-meta strong {
+      color: var(--ink);
+    }
+
+    .email-preview-wrap {
+      overflow: auto;
+      background: #e4ebef;
+      padding: 18px;
+    }
+
+    .email-preview {
+      width: 100%;
+      min-height: 560px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
     .sr-only {
       position: absolute;
       width: 1px;
@@ -486,6 +558,14 @@
       button {
         white-space: normal;
       }
+
+      .modal {
+        padding: 12px;
+      }
+
+      .modal-shell {
+        max-height: calc(100vh - 24px);
+      }
     }
   </style>
 </head>
@@ -507,7 +587,14 @@
           <span>Storage email</span>
           <input id="storageEmail" type="email" autocomplete="email" placeholder="records@example.com">
         </label>
-        <p class="note">The app can prepare an email draft. Automatic sending requires a backend or email service.</p>
+        <label>
+          <span>Email format</span>
+          <select id="emailFormat">
+            <option value="text">Plain text</option>
+            <option value="html">HTML</option>
+          </select>
+        </label>
+        <p class="note">Plain text opens a ready draft. HTML opens a styled preview you can copy into the email body.</p>
       </div>
 
       <div class="toolbar">
@@ -977,6 +1064,29 @@
     </main>
   </div>
 
+  <div class="modal" id="htmlEmailModal" aria-hidden="true">
+    <div class="modal-shell" role="dialog" aria-modal="true" aria-labelledby="htmlEmailTitle">
+      <div class="modal-header">
+        <div class="modal-title-row">
+          <h2 id="htmlEmailTitle">HTML email preview</h2>
+          <div class="actions">
+            <button type="button" id="copyHtmlEmail">Copy styled email</button>
+            <button type="button" id="downloadHtmlEmail">Download HTML</button>
+            <button class="primary" type="button" id="openHtmlDraft">Open email draft</button>
+            <button type="button" id="closeHtmlEmail">Close</button>
+          </div>
+        </div>
+        <div class="email-meta">
+          <div><span>To:</span> <strong id="htmlEmailTo"></strong></div>
+          <div><span>Subject:</span> <strong id="htmlEmailSubject"></strong></div>
+        </div>
+      </div>
+      <div class="email-preview-wrap">
+        <iframe class="email-preview" id="htmlEmailPreview" title="HTML email preview"></iframe>
+      </div>
+    </div>
+  </div>
+
   <script>
     const STORAGE_KEY = "part107.flight.records.v1";
     const SETTINGS_KEY = "part107.flight.settings.v1";
@@ -1000,6 +1110,11 @@
     const notice = document.querySelector("#notice");
     const reportPreview = document.querySelector("#reportPreview");
     const storageEmail = document.querySelector("#storageEmail");
+    const emailFormat = document.querySelector("#emailFormat");
+    const htmlEmailModal = document.querySelector("#htmlEmailModal");
+    const htmlEmailTo = document.querySelector("#htmlEmailTo");
+    const htmlEmailSubject = document.querySelector("#htmlEmailSubject");
+    const htmlEmailPreview = document.querySelector("#htmlEmailPreview");
     const recordStatus = document.querySelector("#recordStatus");
     const autoSaveText = document.querySelector("#autoSaveText");
     const completionPill = document.querySelector("#completionPill");
@@ -1015,14 +1130,20 @@
     let settings = loadSettings();
     let currentId = records[0]?.id || createRecord().id;
     let saveTimer = 0;
+    let pendingHtmlEmail = null;
 
     storageEmail.value = settings.storageEmail || "";
+    emailFormat.value = settings.emailFormat || "text";
     renderAll();
 
     form.addEventListener("input", scheduleSave);
     form.addEventListener("change", scheduleSave);
     storageEmail.addEventListener("input", () => {
       settings.storageEmail = storageEmail.value.trim();
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    });
+    emailFormat.addEventListener("change", () => {
+      settings.emailFormat = emailFormat.value;
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     });
 
@@ -1080,6 +1201,13 @@
     document.querySelector("#emailReport").addEventListener("click", emailReport);
     document.querySelector("#requestPayment").addEventListener("click", requestPayment);
     document.querySelector("#downloadInvoice").addEventListener("click", downloadInvoice);
+    document.querySelector("#copyHtmlEmail").addEventListener("click", copyPendingHtmlEmail);
+    document.querySelector("#downloadHtmlEmail").addEventListener("click", downloadPendingHtmlEmail);
+    document.querySelector("#openHtmlDraft").addEventListener("click", openPendingHtmlDraft);
+    document.querySelector("#closeHtmlEmail").addEventListener("click", closeHtmlEmailModal);
+    htmlEmailModal.addEventListener("click", (event) => {
+      if (event.target === htmlEmailModal) closeHtmlEmailModal();
+    });
     document.querySelector("#exportJson").addEventListener("click", exportJson);
     document.querySelector("#exportCsv").addEventListener("click", exportCsv);
     document.querySelector("#importButton").addEventListener("click", () => document.querySelector("#importFile").click());
@@ -1429,7 +1557,7 @@
       downloadFile(filename, reportPreview.value, "text/plain");
     }
 
-    function emailReport() {
+    async function emailReport() {
       saveCurrent(false);
       const record = readForm();
       const email = storageEmail.value.trim();
@@ -1444,14 +1572,18 @@
         body += `\n\n${buildPaymentIntro(invoiceRecord)}\n\n${buildInvoice(invoiceRecord)}`;
       }
       const subject = `Part 107 flight record - ${record.missionName || record.flightDate || "Flight"}`;
-      const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.location.href = mailto;
+      if (currentEmailFormat() === "html") {
+        const html = buildHtmlEmail(subject, body);
+        prepareHtmlEmail(email, subject, html, body, slug(record.missionName || "part107-flight-record") + "-email.html");
+      } else {
+        openPlainTextEmail(email, subject, body);
+      }
       setField("status", record.issueInvoiceWithEmail || record.includePaymentRequest ? "Invoice sent" : "Emailed");
       saveCurrent(false);
-      showNotice("Email draft prepared. Review and send it from your email app.");
+      showNotice(currentEmailFormat() === "html" ? "HTML email preview ready. Copy the styled email, then open the draft." : "Email draft prepared. Review and send it from your email app.");
     }
 
-    function requestPayment() {
+    async function requestPayment() {
       saveCurrent(false);
       let record = readForm();
       if (!record.clientBillingEmail) {
@@ -1463,22 +1595,97 @@
       record = ensureInvoiceMetadata(record, "Payment requested");
       const subject = `Invoice ${record.invoiceNumber} - ${record.missionName || "Drone flight services"}`;
       const body = `${buildPaymentIntro(record)}\n\n${buildInvoice(record)}`;
-      const mailto = `mailto:${encodeURIComponent(record.clientBillingEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      window.location.href = mailto;
+      if (currentEmailFormat() === "html") {
+        const html = buildHtmlEmail(subject, body);
+        prepareHtmlEmail(record.clientBillingEmail, subject, html, body, slug(record.invoiceNumber || "invoice") + "-email.html");
+      } else {
+        openPlainTextEmail(record.clientBillingEmail, subject, body);
+      }
       setField("status", "Invoice sent");
       setField("billingStatus", "Payment requested");
       setField("invoiceIssued", true);
       saveCurrent(false);
-      showNotice("Payment request draft prepared. Review and send it from your email app.");
+      showNotice(currentEmailFormat() === "html" ? "HTML payment preview ready. Copy the styled email, then open the draft." : "Payment request draft prepared. Review and send it from your email app.");
     }
 
     function downloadInvoice() {
       saveCurrent(false);
       const record = ensureInvoiceMetadata(readForm(), "Ready to invoice");
-      const filename = slug(record.invoiceNumber || record.missionName || "invoice") + ".txt";
-      downloadFile(filename, buildInvoice(record), "text/plain");
+      const filename = slug(record.invoiceNumber || record.missionName || "invoice");
+      if (currentEmailFormat() === "html") {
+        const subject = `Invoice ${record.invoiceNumber} - ${record.missionName || "Drone flight services"}`;
+        downloadFile(filename + ".html", buildHtmlEmail(subject, `${buildPaymentIntro(record)}\n\n${buildInvoice(record)}`), "text/html");
+      } else {
+        downloadFile(filename + ".txt", buildInvoice(record), "text/plain");
+      }
       saveCurrent(false);
       showNotice("Invoice downloaded.");
+    }
+
+    function openPlainTextEmail(recipient, subject, body) {
+      const mailto = `mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailto;
+    }
+
+    function prepareHtmlEmail(recipient, subject, html, plainText, filename) {
+      pendingHtmlEmail = { recipient, subject, html, plainText, filename };
+      htmlEmailTo.textContent = recipient;
+      htmlEmailSubject.textContent = subject;
+      htmlEmailPreview.srcdoc = html;
+      htmlEmailModal.classList.add("show");
+      htmlEmailModal.setAttribute("aria-hidden", "false");
+    }
+
+    async function copyPendingHtmlEmail() {
+      if (!pendingHtmlEmail) return;
+      await copyHtmlEmail(pendingHtmlEmail.html, pendingHtmlEmail.plainText);
+      showNotice("Styled HTML email copied. Paste it into the email body.");
+    }
+
+    function downloadPendingHtmlEmail() {
+      if (!pendingHtmlEmail) return;
+      downloadFile(pendingHtmlEmail.filename, pendingHtmlEmail.html, "text/html");
+      showNotice("HTML email downloaded.");
+    }
+
+    function openPendingHtmlDraft() {
+      if (!pendingHtmlEmail) return;
+      openPlainTextEmail(pendingHtmlEmail.recipient, pendingHtmlEmail.subject, "");
+      showNotice("Email draft opened. Paste the copied styled email into the body.");
+    }
+
+    function closeHtmlEmailModal() {
+      htmlEmailModal.classList.remove("show");
+      htmlEmailModal.setAttribute("aria-hidden", "true");
+    }
+
+    async function copyHtmlEmail(html, plainText) {
+      try {
+        if (window.ClipboardItem && navigator.clipboard?.write) {
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              "text/html": new Blob([html], { type: "text/html" }),
+              "text/plain": new Blob([plainText], { type: "text/plain" })
+            })
+          ]);
+          return;
+        }
+        await navigator.clipboard.writeText(html);
+      } catch (error) {
+        const helper = document.createElement("textarea");
+        helper.value = html;
+        helper.setAttribute("readonly", "");
+        helper.style.position = "fixed";
+        helper.style.left = "-9999px";
+        document.body.appendChild(helper);
+        helper.select();
+        document.execCommand("copy");
+        helper.remove();
+      }
+    }
+
+    function currentEmailFormat() {
+      return emailFormat.value === "html" ? "html" : "text";
     }
 
     function ensureInvoiceMetadata(record, status) {
@@ -1553,6 +1760,52 @@
         `Remote Pilot in Command: ${record.rpicName || ""}`
       ];
       return lines.join("\n");
+    }
+
+    function buildHtmlEmail(title, plainText) {
+      const blocks = plainText.split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
+      const content = blocks.map((block) => {
+        const lines = block.split("\n");
+        const heading = lines.length > 1 && lines[0].length < 48 ? lines[0] : "";
+        const body = heading ? lines.slice(1).join("\n") : block;
+        if (!body.trim()) {
+          return `<h2>${escapeHtml(heading)}</h2>`;
+        }
+        return `
+          <section style="margin:0 0 18px;padding:0 0 16px;border-bottom:1px solid #d4dde3;">
+            ${heading ? `<h2 style="margin:0 0 8px;font-size:17px;line-height:1.3;color:#172026;">${escapeHtml(heading)}</h2>` : ""}
+            <p style="margin:0;white-space:pre-line;font-size:14px;line-height:1.55;color:#172026;">${escapeHtml(body)}</p>
+          </section>
+        `;
+      }).join("");
+      return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(title)}</title>
+</head>
+<body style="margin:0;padding:0;background:#eef2f4;font-family:Arial,Helvetica,sans-serif;color:#172026;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef2f4;padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:720px;background:#ffffff;border:1px solid #d4dde3;border-radius:8px;overflow:hidden;">
+          <tr>
+            <td style="padding:22px 24px;background:#0c6b58;color:#ffffff;">
+              <h1 style="margin:0;font-size:22px;line-height:1.25;">${escapeHtml(title)}</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px;">
+              ${content}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
     }
 
     function exportJson() {
