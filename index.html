@@ -380,6 +380,10 @@
       color: var(--ink);
     }
 
+    .money-total {
+      font-size: 18px;
+    }
+
     .missing-list {
       display: grid;
       gap: 6px;
@@ -553,6 +557,8 @@
                     <option>Draft</option>
                     <option>Ready</option>
                     <option>Emailed</option>
+                    <option>Invoice sent</option>
+                    <option>Paid</option>
                     <option>Needs review</option>
                   </select>
                 </label>
@@ -857,12 +863,102 @@
               </div>
             </div>
           </section>
+
+          <section>
+            <header>
+              <h2>Payment and invoice</h2>
+              <span class="pill" id="invoicePill">Not billed</span>
+            </header>
+            <div class="section-body">
+              <div class="grid">
+                <label class="span-4">
+                  <span>Billing status</span>
+                  <select data-field="billingStatus">
+                    <option>Not billed</option>
+                    <option>Ready to invoice</option>
+                    <option>Invoice sent</option>
+                    <option>Payment requested</option>
+                    <option>Partially paid</option>
+                    <option>Paid</option>
+                    <option>Overdue</option>
+                  </select>
+                </label>
+                <label class="span-4">
+                  <span>Invoice number</span>
+                  <input data-field="invoiceNumber" placeholder="INV-2026-001">
+                </label>
+                <label class="span-4">
+                  <span>Client billing email</span>
+                  <input data-field="clientBillingEmail" type="email" autocomplete="email" placeholder="billing@example.com">
+                </label>
+                <label class="span-3">
+                  <span>Invoice date</span>
+                  <input data-field="invoiceDate" type="date">
+                </label>
+                <label class="span-3">
+                  <span>Due date</span>
+                  <input data-field="dueDate" type="date">
+                </label>
+                <label class="span-3">
+                  <span>Payment terms</span>
+                  <select data-field="paymentTerms">
+                    <option>Due on receipt</option>
+                    <option>Net 7</option>
+                    <option>Net 15</option>
+                    <option>Net 30</option>
+                    <option>Deposit required</option>
+                    <option>Custom</option>
+                  </select>
+                </label>
+                <label class="span-3">
+                  <span>Currency</span>
+                  <input data-field="currency" placeholder="USD">
+                </label>
+                <label class="span-3">
+                  <span>Service amount</span>
+                  <input data-field="serviceAmount" inputmode="decimal" placeholder="450.00">
+                </label>
+                <label class="span-3">
+                  <span>Tax</span>
+                  <input data-field="taxAmount" inputmode="decimal" placeholder="0.00">
+                </label>
+                <label class="span-3">
+                  <span>Discount</span>
+                  <input data-field="discountAmount" inputmode="decimal" placeholder="0.00">
+                </label>
+                <label class="span-3">
+                  <span>Deposit or payment received</span>
+                  <input data-field="depositPaid" inputmode="decimal" placeholder="0.00">
+                </label>
+                <label class="span-12">
+                  <span>Service description</span>
+                  <textarea data-field="serviceDescription" placeholder="Drone flight service, media capture, inspection, mapping, editing, travel, or other billable items."></textarea>
+                </label>
+                <label class="span-12">
+                  <span>Payment link</span>
+                  <input data-field="paymentLink" type="url" placeholder="Stripe, Square, QuickBooks, PayPal, or bank payment link">
+                </label>
+                <label class="span-12">
+                  <span>Payment instructions</span>
+                  <textarea data-field="paymentInstructions" placeholder="Card link, ACH details, check instructions, late fee policy, or thank-you note."></textarea>
+                </label>
+              </div>
+              <div class="check-grid">
+                <label class="check"><input data-field="includePaymentRequest" type="checkbox"> Add payment request to flight email</label>
+                <label class="check"><input data-field="issueInvoiceWithEmail" type="checkbox"> Issue invoice with flight email</label>
+                <label class="check"><input data-field="invoiceIssued" type="checkbox"> Invoice issued</label>
+                <label class="check"><input data-field="paymentReceived" type="checkbox"> Payment received</label>
+              </div>
+            </div>
+          </section>
         </form>
 
         <aside class="panel" aria-label="Report and actions">
           <h2>Record summary</h2>
           <div class="summary">
             <div class="summary-row"><span>Required fields</span><strong id="requiredCount">0/0</strong></div>
+            <div class="summary-row"><span>Invoice status</span><strong id="billingStatusSummary">Not billed</strong></div>
+            <div class="summary-row"><span>Balance due</span><strong class="money-total" id="balanceDueSummary">$0.00</strong></div>
             <div class="summary-row"><span>Saved records</span><strong id="recordCount">0</strong></div>
             <div class="summary-row"><span>Last saved</span><strong id="lastSaved">Never</strong></div>
           </div>
@@ -871,6 +967,8 @@
             <button type="button" id="copyReport">Copy report</button>
             <button type="button" id="downloadReport">Download TXT</button>
             <button class="primary" type="button" id="emailReport">Prepare email</button>
+            <button type="button" id="requestPayment">Request payment</button>
+            <button type="button" id="downloadInvoice">Download invoice</button>
           </div>
           <textarea class="report" id="reportPreview" readonly aria-label="Flight report preview"></textarea>
           <p class="note">Records are saved in this browser on this Mac. Use JSON export as the backup file for moving records to another machine.</p>
@@ -905,8 +1003,11 @@
     const recordStatus = document.querySelector("#recordStatus");
     const autoSaveText = document.querySelector("#autoSaveText");
     const completionPill = document.querySelector("#completionPill");
+    const invoicePill = document.querySelector("#invoicePill");
     const missingList = document.querySelector("#missingList");
     const requiredCount = document.querySelector("#requiredCount");
+    const billingStatusSummary = document.querySelector("#billingStatusSummary");
+    const balanceDueSummary = document.querySelector("#balanceDueSummary");
     const recordCount = document.querySelector("#recordCount");
     const lastSaved = document.querySelector("#lastSaved");
 
@@ -977,6 +1078,8 @@
     document.querySelector("#copyReport").addEventListener("click", copyReport);
     document.querySelector("#downloadReport").addEventListener("click", downloadReport);
     document.querySelector("#emailReport").addEventListener("click", emailReport);
+    document.querySelector("#requestPayment").addEventListener("click", requestPayment);
+    document.querySelector("#downloadInvoice").addEventListener("click", downloadInvoice);
     document.querySelector("#exportJson").addEventListener("click", exportJson);
     document.querySelector("#exportCsv").addEventListener("click", exportCsv);
     document.querySelector("#importButton").addEventListener("click", () => document.querySelector("#importFile").click());
@@ -991,7 +1094,10 @@
         status: "Draft",
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
         authorizationRequired: "No",
-        operationType: "Routine Part 107"
+        operationType: "Routine Part 107",
+        billingStatus: "Not billed",
+        paymentTerms: "Due on receipt",
+        currency: "USD"
       };
     }
 
@@ -1099,12 +1205,18 @@
       const missing = requiredFields.filter(([key]) => !record[key]);
       const completed = requiredFields.length - missing.length;
       const percent = Math.round((completed / requiredFields.length) * 100);
+      const balance = invoiceTotals(record).balance;
+      const billingStatus = record.paymentReceived ? "Paid" : record.billingStatus || "Not billed";
 
       recordStatus.textContent = record.status || "Draft";
-      recordStatus.className = `pill${record.status === "Ready" || record.status === "Emailed" ? " good" : ""}`;
+      recordStatus.className = `pill${["Ready", "Emailed", "Invoice sent", "Paid"].includes(record.status) ? " good" : ""}`;
+      invoicePill.textContent = billingStatus;
+      invoicePill.className = `pill${record.paymentReceived || billingStatus === "Paid" ? " good" : balance > 0 ? " warn" : ""}`;
       completionPill.textContent = `${percent}% complete`;
       completionPill.className = `pill${percent === 100 ? " good" : " warn"}`;
       requiredCount.textContent = `${completed}/${requiredFields.length}`;
+      billingStatusSummary.textContent = billingStatus;
+      balanceDueSummary.textContent = formatMoney(balance, record.currency);
       recordCount.textContent = String(records.length);
       lastSaved.textContent = record.updatedAt ? new Date(record.updatedAt).toLocaleString() : "Never";
       autoSaveText.textContent = `Saved locally · ${records.length} record${records.length === 1 ? "" : "s"}`;
@@ -1203,6 +1315,7 @@
 
     function buildReport(record) {
       const yesNo = (value) => value ? "Yes" : "No";
+      const totals = invoiceTotals(record);
       const lines = [
         "PART 107 COMMERCIAL FLIGHT RECORD",
         "",
@@ -1275,6 +1388,21 @@
         `Maintenance or defects: ${record.maintenanceNotes || ""}`,
         `FAA accident report may be needed: ${yesNo(record.accidentReportNeeded)}`,
         "",
+        "Payment and invoice",
+        `Billing status: ${record.billingStatus || "Not billed"}`,
+        `Invoice number: ${record.invoiceNumber || ""}`,
+        `Invoice date: ${record.invoiceDate || ""}`,
+        `Due date: ${record.dueDate || ""}`,
+        `Client billing email: ${record.clientBillingEmail || ""}`,
+        `Service amount: ${formatMoney(totals.service, record.currency)}`,
+        `Tax: ${formatMoney(totals.tax, record.currency)}`,
+        `Discount: ${formatMoney(totals.discount, record.currency)}`,
+        `Deposit/payment received: ${formatMoney(totals.paid, record.currency)}`,
+        `Balance due: ${formatMoney(totals.balance, record.currency)}`,
+        `Payment link: ${record.paymentLink || ""}`,
+        `Invoice issued: ${yesNo(record.invoiceIssued)}`,
+        `Payment received: ${yesNo(record.paymentReceived)}`,
+        "",
         `Record ID: ${record.id}`,
         `Created: ${record.createdAt || ""}`,
         `Updated: ${record.updatedAt || ""}`
@@ -1310,13 +1438,121 @@
         storageEmail.focus();
         return;
       }
+      let body = reportPreview.value;
+      if (record.includePaymentRequest || record.issueInvoiceWithEmail) {
+        const invoiceRecord = ensureInvoiceMetadata(record, record.includePaymentRequest ? "Payment requested" : "Invoice sent");
+        body += `\n\n${buildPaymentIntro(invoiceRecord)}\n\n${buildInvoice(invoiceRecord)}`;
+      }
       const subject = `Part 107 flight record - ${record.missionName || record.flightDate || "Flight"}`;
-      const body = reportPreview.value;
       const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       window.location.href = mailto;
-      setField("status", "Emailed");
+      setField("status", record.issueInvoiceWithEmail || record.includePaymentRequest ? "Invoice sent" : "Emailed");
       saveCurrent(false);
       showNotice("Email draft prepared. Review and send it from your email app.");
+    }
+
+    function requestPayment() {
+      saveCurrent(false);
+      let record = readForm();
+      if (!record.clientBillingEmail) {
+        showNotice("Add a client billing email first.");
+        const field = document.querySelector('[data-field="clientBillingEmail"]');
+        if (field) field.focus();
+        return;
+      }
+      record = ensureInvoiceMetadata(record, "Payment requested");
+      const subject = `Invoice ${record.invoiceNumber} - ${record.missionName || "Drone flight services"}`;
+      const body = `${buildPaymentIntro(record)}\n\n${buildInvoice(record)}`;
+      const mailto = `mailto:${encodeURIComponent(record.clientBillingEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailto;
+      setField("status", "Invoice sent");
+      setField("billingStatus", "Payment requested");
+      setField("invoiceIssued", true);
+      saveCurrent(false);
+      showNotice("Payment request draft prepared. Review and send it from your email app.");
+    }
+
+    function downloadInvoice() {
+      saveCurrent(false);
+      const record = ensureInvoiceMetadata(readForm(), "Ready to invoice");
+      const filename = slug(record.invoiceNumber || record.missionName || "invoice") + ".txt";
+      downloadFile(filename, buildInvoice(record), "text/plain");
+      saveCurrent(false);
+      showNotice("Invoice downloaded.");
+    }
+
+    function ensureInvoiceMetadata(record, status) {
+      const next = { ...record };
+      const today = new Date();
+      const isoToday = toDateInput(today);
+      if (!next.invoiceNumber) next.invoiceNumber = createInvoiceNumber(next, today);
+      if (!next.invoiceDate) next.invoiceDate = isoToday;
+      if (!next.dueDate) next.dueDate = dueDateForTerms(next.paymentTerms, today);
+      if (!next.currency) next.currency = "USD";
+      if (!next.serviceDescription) {
+        next.serviceDescription = `${next.purpose || "Drone"} services for ${next.missionName || next.flightDate || "flight record"}`;
+      }
+      next.billingStatus = status || next.billingStatus || "Ready to invoice";
+      next.invoiceIssued = status === "Payment requested" || status === "Invoice sent" || Boolean(next.invoiceIssued);
+      next.updatedAt = new Date().toISOString();
+      records = records.map((item) => item.id === currentId ? next : item);
+      persist();
+      writeForm(next);
+      updateSummary();
+      updateReport();
+      return next;
+    }
+
+    function buildPaymentIntro(record) {
+      const totals = invoiceTotals(record);
+      const lines = [
+        `Hello${record.client ? ` ${record.client}` : ""},`,
+        "",
+        `Please see invoice ${record.invoiceNumber || ""} for ${record.missionName || "drone flight services"}.`,
+        `Balance due: ${formatMoney(totals.balance, record.currency)}${record.dueDate ? ` by ${record.dueDate}` : ""}.`
+      ];
+      if (record.paymentLink) lines.push(`Pay online: ${record.paymentLink}`);
+      if (record.paymentInstructions) lines.push(record.paymentInstructions);
+      lines.push("", "Thank you.");
+      return lines.join("\n");
+    }
+
+    function buildInvoice(record) {
+      const totals = invoiceTotals(record);
+      const lines = [
+        "INVOICE",
+        "",
+        `Invoice number: ${record.invoiceNumber || ""}`,
+        `Invoice date: ${record.invoiceDate || ""}`,
+        `Due date: ${record.dueDate || ""}`,
+        `Payment terms: ${record.paymentTerms || ""}`,
+        "",
+        "Bill to",
+        record.client || "",
+        record.clientBillingEmail || "",
+        "",
+        "Service",
+        record.serviceDescription || "",
+        `Mission: ${record.missionName || ""}`,
+        `Flight date: ${record.flightDate || ""}`,
+        `Location: ${record.takeoffLocation || ""}`,
+        "",
+        "Charges",
+        `Service amount: ${formatMoney(totals.service, record.currency)}`,
+        `Tax: ${formatMoney(totals.tax, record.currency)}`,
+        `Discount: ${formatMoney(totals.discount, record.currency)}`,
+        `Deposit/payment received: ${formatMoney(totals.paid, record.currency)}`,
+        `Balance due: ${formatMoney(totals.balance, record.currency)}`,
+        "",
+        `Payment link: ${record.paymentLink || ""}`,
+        `Payment instructions: ${record.paymentInstructions || ""}`,
+        "",
+        "Flight record reference",
+        `Record ID: ${record.id || ""}`,
+        `FAA registration: ${record.faaRegistration || ""}`,
+        `Remote Pilot in Command: ${record.rpicName || ""}`
+      ];
+      return lines.join("\n");
     }
 
     function exportJson() {
@@ -1331,7 +1567,10 @@
         "takeoffLocation", "latitude", "longitude", "rpicName", "certificateNumber",
         "droneModel", "faaRegistration", "remoteIdSerial", "airspaceClass",
         "authorizationRequired", "authorizationNumber", "maxAltitude", "wind",
-        "visibility", "hazards", "abnormalEvents", "accidentReportNeeded", "updatedAt"
+        "visibility", "hazards", "abnormalEvents", "accidentReportNeeded",
+        "billingStatus", "invoiceNumber", "invoiceDate", "dueDate", "clientBillingEmail",
+        "serviceAmount", "taxAmount", "discountAmount", "depositPaid", "paymentTerms",
+        "paymentLink", "invoiceIssued", "paymentReceived", "updatedAt"
       ];
       const csv = [
         columns.join(","),
@@ -1375,6 +1614,64 @@
       const field = document.querySelector(`[data-field="${name}"]`);
       if (!field) return "";
       return field.type === "checkbox" ? field.checked : field.value.trim();
+    }
+
+    function invoiceTotals(record) {
+      const service = parseMoney(record.serviceAmount);
+      const tax = parseMoney(record.taxAmount);
+      const discount = parseMoney(record.discountAmount);
+      const paid = parseMoney(record.depositPaid);
+      return {
+        service,
+        tax,
+        discount,
+        paid,
+        balance: Math.max(0, service + tax - discount - paid)
+      };
+    }
+
+    function parseMoney(value) {
+      if (value === undefined || value === null || value === "") return 0;
+      const number = Number(String(value).replace(/[^0-9.-]/g, ""));
+      return Number.isFinite(number) ? number : 0;
+    }
+
+    function formatMoney(value, currency) {
+      const code = (currency || "USD").trim().toUpperCase();
+      try {
+        return new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: code,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(value || 0);
+      } catch (error) {
+        return `${code} ${(value || 0).toFixed(2)}`;
+      }
+    }
+
+    function createInvoiceNumber(record, date) {
+      const stamp = toDateInput(date).replaceAll("-", "");
+      const suffix = String(record.id || crypto.randomUUID()).slice(0, 4).toUpperCase();
+      return `INV-${stamp}-${suffix}`;
+    }
+
+    function dueDateForTerms(terms, date) {
+      const days = {
+        "Due on receipt": 0,
+        "Net 7": 7,
+        "Net 15": 15,
+        "Net 30": 30,
+        "Deposit required": 0,
+        "Custom": 0
+      }[terms || "Due on receipt"] || 0;
+      const due = new Date(date);
+      due.setDate(due.getDate() + days);
+      return toDateInput(due);
+    }
+
+    function toDateInput(date) {
+      return date.toISOString().slice(0, 10);
     }
 
     function downloadFile(filename, content, type) {
