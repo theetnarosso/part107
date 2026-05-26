@@ -1,0 +1,1417 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Part 107 Flight Record</title>
+  <style>
+    :root {
+      --bg: #eef2f4;
+      --surface: #ffffff;
+      --surface-2: #f7f9fa;
+      --ink: #172026;
+      --muted: #65717a;
+      --line: #d4dde3;
+      --accent: #0c6b58;
+      --accent-strong: #084d40;
+      --accent-soft: #dff1ec;
+      --blue: #1d5c93;
+      --amber: #9a5b00;
+      --danger: #a23d32;
+      --shadow: 0 14px 30px rgba(23, 32, 38, .08);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background: linear-gradient(180deg, #e7eef1 0, var(--bg) 260px);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--surface);
+      color: var(--ink);
+      cursor: pointer;
+      padding: 7px 11px;
+      white-space: nowrap;
+    }
+
+    button:hover {
+      border-color: #9fb0bb;
+      background: #f9fbfc;
+    }
+
+    button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    button.primary:hover {
+      background: var(--accent-strong);
+    }
+
+    button.danger {
+      border-color: #e5b3ad;
+      color: var(--danger);
+    }
+
+    button.small {
+      min-height: 30px;
+      padding: 5px 8px;
+      font-size: 13px;
+    }
+
+    a {
+      color: var(--blue);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--ink);
+      padding: 8px 10px;
+      min-height: 38px;
+    }
+
+    textarea {
+      min-height: 86px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    button:focus-visible {
+      outline: 3px solid rgba(29, 92, 147, .18);
+      outline-offset: 1px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+
+    label span {
+      color: var(--muted);
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+    }
+
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      border-right: 1px solid var(--line);
+      background: rgba(255, 255, 255, .86);
+      backdrop-filter: blur(12px);
+      padding: 18px;
+    }
+
+    main {
+      padding: 22px;
+    }
+
+    .brand {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .toolbar,
+    .row,
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toolbar {
+      margin-bottom: 16px;
+    }
+
+    .settings {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      margin-bottom: 16px;
+    }
+
+    .records {
+      display: grid;
+      gap: 8px;
+    }
+
+    .record-button {
+      width: 100%;
+      display: grid;
+      gap: 4px;
+      text-align: left;
+      white-space: normal;
+      border-radius: var(--radius);
+      padding: 10px;
+    }
+
+    .record-button.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .record-title {
+      font-weight: 800;
+      color: var(--ink);
+    }
+
+    .record-meta {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .status-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 26px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .pill.good {
+      border-color: #a5d7c9;
+      background: #ebf8f4;
+      color: #0b5c4b;
+    }
+
+    .pill.warn {
+      border-color: #e8ca92;
+      background: #fff8e8;
+      color: var(--amber);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+      gap: 18px;
+      align-items: start;
+    }
+
+    form {
+      display: grid;
+      gap: 16px;
+    }
+
+    section {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    section > header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+
+    section h2,
+    .panel h2 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    .section-body {
+      display: grid;
+      gap: 14px;
+      padding: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .grid > * {
+      min-width: 0;
+    }
+
+    .span-12 { grid-column: span 12; }
+    .span-8 { grid-column: span 8; }
+    .span-6 { grid-column: span 6; }
+    .span-4 { grid-column: span 4; }
+    .span-3 { grid-column: span 3; }
+
+    .check-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      padding: 9px 10px;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 650;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .check input {
+      width: 16px;
+      height: 16px;
+      min-height: 16px;
+      padding: 0;
+      flex: 0 0 auto;
+    }
+
+    .panel {
+      position: sticky;
+      top: 22px;
+      display: grid;
+      gap: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .summary {
+      display: grid;
+      gap: 10px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .summary-row strong {
+      color: var(--ink);
+    }
+
+    .missing-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding-left: 18px;
+      color: var(--amber);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .report {
+      width: 100%;
+      min-height: 240px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .notice {
+      display: none;
+      border: 1px solid #b7d5e8;
+      border-radius: var(--radius);
+      background: #edf7ff;
+      color: #174f78;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+
+    .notice.show {
+      display: block;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 1020px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        position: static;
+        height: auto;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        position: static;
+      }
+    }
+
+    @media (max-width: 1320px) and (min-width: 1021px) {
+      .span-3 {
+        grid-column: span 6;
+      }
+
+      .layout {
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+      }
+    }
+
+    @media (max-width: 720px) {
+      main {
+        padding: 14px;
+      }
+
+      .topbar {
+        display: grid;
+      }
+
+      .span-8,
+      .span-6,
+      .span-4,
+      .span-3 {
+        grid-column: span 12;
+      }
+
+      .check-grid {
+        grid-template-columns: 1fr;
+      }
+
+      button {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <h1>Part 107 Flight Record</h1>
+        <p>Collect commercial drone flight details, save the record locally, and prepare a clean email report.</p>
+      </div>
+
+      <div class="toolbar">
+        <button class="primary" type="button" id="newRecord">New flight</button>
+        <button type="button" id="duplicateRecord">Duplicate</button>
+      </div>
+
+      <div class="settings">
+        <label>
+          <span>Storage email</span>
+          <input id="storageEmail" type="email" autocomplete="email" placeholder="records@example.com">
+        </label>
+        <p class="note">The app can prepare an email draft. Automatic sending requires a backend or email service.</p>
+      </div>
+
+      <div class="toolbar">
+        <button type="button" id="exportJson">Export JSON</button>
+        <button type="button" id="exportCsv">Export CSV</button>
+        <button type="button" id="importButton">Import</button>
+        <input class="sr-only" id="importFile" type="file" accept="application/json">
+      </div>
+
+      <div class="records" id="recordList" aria-label="Saved flight records"></div>
+    </aside>
+
+    <main>
+      <div class="topbar">
+        <div>
+          <div class="status-line">
+            <span class="pill" id="recordStatus">Draft</span>
+            <span id="autoSaveText">Saved locally</span>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" id="captureNow">Capture time</button>
+          <button type="button" id="getLocation">Get location</button>
+          <button class="primary" type="button" id="saveRecord">Save record</button>
+          <button class="danger" type="button" id="deleteRecord">Delete</button>
+        </div>
+      </div>
+
+      <div class="notice" id="notice"></div>
+
+      <div class="layout">
+        <form id="flightForm">
+          <section>
+            <header>
+              <h2>Flight basics</h2>
+              <span class="pill warn" id="completionPill">0% complete</span>
+            </header>
+            <div class="section-body">
+              <div class="grid">
+                <label class="span-6">
+                  <span>Job or mission name</span>
+                  <input data-field="missionName" autocomplete="off" placeholder="Commercial real estate roof survey">
+                </label>
+                <label class="span-3">
+                  <span>Status</span>
+                  <select data-field="status">
+                    <option>Draft</option>
+                    <option>Ready</option>
+                    <option>Emailed</option>
+                    <option>Needs review</option>
+                  </select>
+                </label>
+                <label class="span-3">
+                  <span>Flight date</span>
+                  <input data-field="flightDate" type="date">
+                </label>
+                <label class="span-3">
+                  <span>Start time</span>
+                  <input data-field="startTime" type="time">
+                </label>
+                <label class="span-3">
+                  <span>End time</span>
+                  <input data-field="endTime" type="time">
+                </label>
+                <label class="span-3">
+                  <span>Time zone</span>
+                  <input data-field="timeZone" placeholder="America/New_York">
+                </label>
+                <label class="span-3">
+                  <span>Purpose</span>
+                  <select data-field="purpose">
+                    <option value="">Select</option>
+                    <option>Photography</option>
+                    <option>Video</option>
+                    <option>Mapping</option>
+                    <option>Inspection</option>
+                    <option>Real estate</option>
+                    <option>Construction progress</option>
+                    <option>Other</option>
+                  </select>
+                </label>
+                <label class="span-8">
+                  <span>Client or company</span>
+                  <input data-field="client" autocomplete="organization" placeholder="Client name">
+                </label>
+                <label class="span-4">
+                  <span>Client reference</span>
+                  <input data-field="clientRef" placeholder="Invoice, work order, or project ID">
+                </label>
+                <label class="span-6">
+                  <span>Takeoff location</span>
+                  <input data-field="takeoffLocation" placeholder="Address, parcel, or site name">
+                </label>
+                <label class="span-6">
+                  <span>Landing location</span>
+                  <input data-field="landingLocation" placeholder="If different from takeoff">
+                </label>
+                <label class="span-4">
+                  <span>Latitude</span>
+                  <input data-field="latitude" inputmode="decimal" placeholder="Autofilled when allowed">
+                </label>
+                <label class="span-4">
+                  <span>Longitude</span>
+                  <input data-field="longitude" inputmode="decimal" placeholder="Autofilled when allowed">
+                </label>
+                <label class="span-4">
+                  <span>Location accuracy</span>
+                  <input data-field="locationAccuracy" placeholder="Meters">
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <header>
+              <h2>Pilot and crew</h2>
+            </header>
+            <div class="section-body">
+              <div class="grid">
+                <label class="span-6">
+                  <span>Remote Pilot in Command</span>
+                  <input data-field="rpicName" autocomplete="name" placeholder="Pilot name">
+                </label>
+                <label class="span-6">
+                  <span>Part 107 certificate number</span>
+                  <input data-field="certificateNumber" placeholder="Certificate number">
+                </label>
+                <label class="span-6">
+                  <span>Person manipulating controls</span>
+                  <input data-field="controlOperator" placeholder="Leave blank if same as RPIC">
+                </label>
+                <label class="span-6">
+                  <span>Visual observer</span>
+                  <input data-field="visualObserver" placeholder="Name, or none">
+                </label>
+                <label class="span-12">
+                  <span>Crew notes</span>
+                  <textarea data-field="crewNotes" placeholder="Roles, responsibilities, communication method, and hazards reviewed."></textarea>
+                </label>
+              </div>
+              <div class="check-grid">
+                <label class="check"><input data-field="crewBriefed" type="checkbox"> Crew briefed</label>
+                <label class="check"><input data-field="emergencyPlanReviewed" type="checkbox"> Emergency procedures reviewed</label>
+                <label class="check"><input data-field="vlosPlanned" type="checkbox"> VLOS plan confirmed</label>
+                <label class="check"><input data-field="clientPermission" type="checkbox"> Site permission confirmed</label>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <header>
+              <h2>Aircraft and equipment</h2>
+            </header>
+            <div class="section-body">
+              <div class="grid">
+                <label class="span-4">
+                  <span>Drone make and model</span>
+                  <input data-field="droneModel" placeholder="DJI Mavic 3 Enterprise">
+                </label>
+                <label class="span-4">
+                  <span>FAA registration number</span>
+                  <input data-field="faaRegistration" placeholder="FA3...">
+                </label>
+                <label class="span-4">
+                  <span>Aircraft serial number</span>
+                  <input data-field="aircraftSerial" placeholder="Serial number">
+                </label>
+                <label class="span-4">
+                  <span>Remote ID serial/module</span>
+                  <input data-field="remoteIdSerial" placeholder="Remote ID serial">
+                </label>
+                <label class="span-4">
+                  <span>Remote ID method</span>
+                  <select data-field="remoteIdMethod">
+                    <option value="">Select</option>
+                    <option>Standard Remote ID drone</option>
+                    <option>Broadcast module</option>
+                    <option>FRIA only</option>
+                    <option>Authorization or exception</option>
+                  </select>
+                </label>
+                <label class="span-4">
+                  <span>Payload</span>
+                  <input data-field="payload" placeholder="Camera, filter, sensor, none">
+                </label>
+                <label class="span-6">
+                  <span>Battery IDs</span>
+                  <input data-field="batteryIds" placeholder="B01, B03">
+                </label>
+                <label class="span-6">
+                  <span>Launch battery level</span>
+                  <input data-field="launchBattery" placeholder="Example: 96%">
+                </label>
+              </div>
+              <div class="check-grid">
+                <label class="check"><input data-field="aircraftSafe" type="checkbox"> Aircraft safe to operate</label>
+                <label class="check"><input data-field="controlLinkChecked" type="checkbox"> Control link checked</label>
+                <label class="check"><input data-field="payloadSecure" type="checkbox"> Payload secure</label>
+                <label class="check"><input data-field="powerSufficient" type="checkbox"> Power sufficient for mission</label>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <header>
+              <h2>Airspace and operating limits</h2>
+            </header>
+            <div class="section-body">
+              <div class="grid">
+                <label class="span-3">
+                  <span>Airspace class</span>
+                  <select data-field="airspaceClass">
+                    <option value="">Select</option>
+                    <option>Class G</option>
+                    <option>Class B</option>
+                    <option>Class C</option>
+                    <option>Class D</option>
+                    <option>Surface Class E</option>
+                    <option>Restricted or prohibited</option>
+                    <option>Unknown</option>
+                  </select>
+                </label>
+                <label class="span-3">
+                  <span>LAANC or ATC authorization</span>
+                  <select data-field="authorizationRequired">
+                    <option>No</option>
+                    <option>Yes</option>
+                    <option>Pending</option>
+                    <option>Not sure</option>
+                  </select>
+                </label>
+                <label class="span-3">
+                  <span>Authorization number</span>
+                  <input data-field="authorizationNumber" placeholder="If required">
+                </label>
+                <label class="span-3">
+                  <span>Max altitude AGL</span>
+                  <input data-field="maxAltitude" placeholder="Example: 200 ft">
+                </label>
+                <label class="span-4">
+                  <span>Waiver used</span>
+                  <input data-field="waiverUsed" placeholder="None, or waiver number">
+                </label>
+                <label class="span-4">
+                  <span>Nearby airport/heliport</span>
+                  <input data-field="nearbyAirport" placeholder="Name/distance">
+                </label>
+                <label class="span-4">
+                  <span>Operation type</span>
+                  <select data-field="operationType">
+                    <option>Routine Part 107</option>
+                    <option>Night</option>
+                    <option>Over people</option>
+                    <option>Over moving vehicles</option>
+                    <option>Near airport</option>
+                    <option>Waiver operation</option>
+                  </select>
+                </label>
+                <label class="span-12">
+                  <span>Airspace notes</span>
+                  <textarea data-field="airspaceNotes" placeholder="TFR, NOTAM, LAANC, waiver, airport, heliport, and VLOS notes."></textarea>
+                </label>
+              </div>
+              <div class="check-grid">
+                <label class="check"><input data-field="tfrChecked" type="checkbox"> TFR/NOTAM checked</label>
+                <label class="check"><input data-field="airspaceChecked" type="checkbox"> Airspace checked</label>
+                <label class="check"><input data-field="yieldRightOfWay" type="checkbox"> Right-of-way reviewed</label>
+                <label class="check"><input data-field="movingVehicleReviewed" type="checkbox"> Moving vehicles reviewed</label>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <header>
+              <h2>Weather and site risk</h2>
+              <button class="small" type="button" id="refreshWeather">Fetch weather</button>
+            </header>
+            <div class="section-body">
+              <div class="grid">
+                <label class="span-3">
+                  <span>Wind</span>
+                  <input data-field="wind" placeholder="Autofilled or manual">
+                </label>
+                <label class="span-3">
+                  <span>Visibility</span>
+                  <input data-field="visibility" placeholder="Example: 10 sm">
+                </label>
+                <label class="span-3">
+                  <span>Clouds/ceiling</span>
+                  <input data-field="clouds" placeholder="Example: scattered">
+                </label>
+                <label class="span-3">
+                  <span>Temperature</span>
+                  <input data-field="temperature" placeholder="Autofilled or manual">
+                </label>
+                <label class="span-12">
+                  <span>Hazards</span>
+                  <textarea data-field="hazards" placeholder="People, traffic, wires, trees, structures, water, animals, ground hazards, privacy concerns."></textarea>
+                </label>
+                <label class="span-12">
+                  <span>Emergency landing area</span>
+                  <input data-field="emergencyLanding" placeholder="Describe primary and alternate landing zones">
+                </label>
+              </div>
+              <div class="check-grid">
+                <label class="check"><input data-field="weatherAcceptable" type="checkbox"> Weather acceptable</label>
+                <label class="check"><input data-field="peoplePropertyAssessed" type="checkbox"> People/property assessed</label>
+                <label class="check"><input data-field="groundHazardsAssessed" type="checkbox"> Ground hazards assessed</label>
+                <label class="check"><input data-field="emergencyLandingIdentified" type="checkbox"> Emergency landing identified</label>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <header>
+              <h2>Flight outcome</h2>
+              <button class="small" type="button" id="setEndNow">Set end time</button>
+            </header>
+            <div class="section-body">
+              <div class="grid">
+                <label class="span-3">
+                  <span>Actual duration</span>
+                  <input data-field="duration" placeholder="Example: 22 min">
+                </label>
+                <label class="span-3">
+                  <span>Max distance</span>
+                  <input data-field="maxDistance" placeholder="Example: 900 ft">
+                </label>
+                <label class="span-3">
+                  <span>Media captured</span>
+                  <input data-field="mediaCaptured" placeholder="Photos, video, mapping">
+                </label>
+                <label class="span-3">
+                  <span>Landing battery level</span>
+                  <input data-field="landingBattery" placeholder="Example: 34%">
+                </label>
+                <label class="span-12">
+                  <span>Abnormal events</span>
+                  <textarea data-field="abnormalEvents" placeholder="Warnings, lost link, hard landing, near miss, flyaway, complaint, damage, or none."></textarea>
+                </label>
+                <label class="span-12">
+                  <span>Maintenance or defects</span>
+                  <textarea data-field="maintenanceNotes" placeholder="Post-flight condition, defects, repairs, battery condition, props, payload."></textarea>
+                </label>
+              </div>
+              <div class="check-grid">
+                <label class="check"><input data-field="vlosMaintained" type="checkbox"> VLOS maintained</label>
+                <label class="check"><input data-field="noDamageObserved" type="checkbox"> No damage observed</label>
+                <label class="check"><input data-field="dataBackedUp" type="checkbox"> Media/data backed up</label>
+                <label class="check"><input data-field="accidentReportNeeded" type="checkbox"> FAA accident report may be needed</label>
+              </div>
+            </div>
+          </section>
+        </form>
+
+        <aside class="panel" aria-label="Report and actions">
+          <h2>Record summary</h2>
+          <div class="summary">
+            <div class="summary-row"><span>Required fields</span><strong id="requiredCount">0/0</strong></div>
+            <div class="summary-row"><span>Saved records</span><strong id="recordCount">0</strong></div>
+            <div class="summary-row"><span>Last saved</span><strong id="lastSaved">Never</strong></div>
+          </div>
+          <ul class="missing-list" id="missingList"></ul>
+          <div class="actions">
+            <button type="button" id="copyReport">Copy report</button>
+            <button type="button" id="downloadReport">Download TXT</button>
+            <button class="primary" type="button" id="emailReport">Prepare email</button>
+          </div>
+          <textarea class="report" id="reportPreview" readonly aria-label="Flight report preview"></textarea>
+          <p class="note">Records are saved in this browser on this Mac. Use JSON export as the backup file for moving records to another machine.</p>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "part107.flight.records.v1";
+    const SETTINGS_KEY = "part107.flight.settings.v1";
+
+    const requiredFields = [
+      ["missionName", "Job or mission name"],
+      ["flightDate", "Flight date"],
+      ["startTime", "Start time"],
+      ["takeoffLocation", "Takeoff location"],
+      ["rpicName", "Remote Pilot in Command"],
+      ["certificateNumber", "Part 107 certificate number"],
+      ["droneModel", "Drone make and model"],
+      ["faaRegistration", "FAA registration number"],
+      ["remoteIdSerial", "Remote ID serial/module"],
+      ["airspaceClass", "Airspace class"],
+      ["maxAltitude", "Max altitude AGL"]
+    ];
+
+    const form = document.querySelector("#flightForm");
+    const recordList = document.querySelector("#recordList");
+    const notice = document.querySelector("#notice");
+    const reportPreview = document.querySelector("#reportPreview");
+    const storageEmail = document.querySelector("#storageEmail");
+    const recordStatus = document.querySelector("#recordStatus");
+    const autoSaveText = document.querySelector("#autoSaveText");
+    const completionPill = document.querySelector("#completionPill");
+    const missingList = document.querySelector("#missingList");
+    const requiredCount = document.querySelector("#requiredCount");
+    const recordCount = document.querySelector("#recordCount");
+    const lastSaved = document.querySelector("#lastSaved");
+
+    let records = loadRecords();
+    let settings = loadSettings();
+    let currentId = records[0]?.id || createRecord().id;
+    let saveTimer = 0;
+
+    storageEmail.value = settings.storageEmail || "";
+    renderAll();
+
+    form.addEventListener("input", scheduleSave);
+    form.addEventListener("change", scheduleSave);
+    storageEmail.addEventListener("input", () => {
+      settings.storageEmail = storageEmail.value.trim();
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    });
+
+    document.querySelector("#newRecord").addEventListener("click", () => {
+      currentId = createRecord().id;
+      renderAll();
+      showNotice("New flight record started.");
+    });
+
+    document.querySelector("#duplicateRecord").addEventListener("click", () => {
+      const base = readForm();
+      base.id = crypto.randomUUID();
+      base.createdAt = new Date().toISOString();
+      base.updatedAt = base.createdAt;
+      base.status = "Draft";
+      base.missionName = `${base.missionName || "Flight"} copy`;
+      records.unshift(base);
+      currentId = base.id;
+      persist();
+      renderAll();
+      showNotice("Record duplicated.");
+    });
+
+    document.querySelector("#saveRecord").addEventListener("click", () => {
+      saveCurrent(true);
+    });
+
+    document.querySelector("#deleteRecord").addEventListener("click", () => {
+      if (records.length <= 1) {
+        showNotice("At least one record must remain.");
+        return;
+      }
+      records = records.filter((record) => record.id !== currentId);
+      currentId = records[0].id;
+      persist();
+      renderAll();
+      showNotice("Record deleted.");
+    });
+
+    document.querySelector("#captureNow").addEventListener("click", () => {
+      setCurrentDateTime(false);
+      saveCurrent(true);
+    });
+
+    document.querySelector("#setEndNow").addEventListener("click", () => {
+      setCurrentDateTime(true);
+      calculateDuration();
+      saveCurrent(true);
+    });
+
+    document.querySelector("#getLocation").addEventListener("click", getLocation);
+    document.querySelector("#refreshWeather").addEventListener("click", fetchWeather);
+    document.querySelector("#copyReport").addEventListener("click", copyReport);
+    document.querySelector("#downloadReport").addEventListener("click", downloadReport);
+    document.querySelector("#emailReport").addEventListener("click", emailReport);
+    document.querySelector("#exportJson").addEventListener("click", exportJson);
+    document.querySelector("#exportCsv").addEventListener("click", exportCsv);
+    document.querySelector("#importButton").addEventListener("click", () => document.querySelector("#importFile").click());
+    document.querySelector("#importFile").addEventListener("change", importJson);
+
+    function blankRecord() {
+      const now = new Date();
+      return {
+        id: crypto.randomUUID(),
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+        status: "Draft",
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+        authorizationRequired: "No",
+        operationType: "Routine Part 107"
+      };
+    }
+
+    function createRecord() {
+      const record = blankRecord();
+      records.unshift(record);
+      persist();
+      return record;
+    }
+
+    function loadRecords() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        return Array.isArray(parsed) && parsed.length ? parsed : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function loadSettings() {
+      try {
+        return JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function persist() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    }
+
+    function currentRecord() {
+      return records.find((record) => record.id === currentId) || records[0];
+    }
+
+    function fields() {
+      return Array.from(document.querySelectorAll("[data-field]"));
+    }
+
+    function renderAll() {
+      writeForm(currentRecord());
+      renderRecords();
+      updateSummary();
+      updateReport();
+    }
+
+    function writeForm(record) {
+      fields().forEach((field) => {
+        if (field.type === "checkbox") {
+          field.checked = Boolean(record[field.dataset.field]);
+        } else {
+          field.value = record[field.dataset.field] || "";
+        }
+      });
+    }
+
+    function readForm() {
+      const record = { ...currentRecord() };
+      fields().forEach((field) => {
+        record[field.dataset.field] = field.type === "checkbox" ? field.checked : field.value.trim();
+      });
+      record.updatedAt = new Date().toISOString();
+      return record;
+    }
+
+    function saveCurrent(showMessage) {
+      const record = readForm();
+      records = records.map((item) => item.id === currentId ? record : item);
+      records.sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+      persist();
+      renderRecords();
+      updateSummary();
+      updateReport();
+      if (showMessage) {
+        showNotice("Record saved locally.");
+      }
+    }
+
+    function scheduleSave() {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => saveCurrent(false), 250);
+    }
+
+    function renderRecords() {
+      recordList.innerHTML = "";
+      records.forEach((record) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `record-button${record.id === currentId ? " active" : ""}`;
+        button.innerHTML = `
+          <span class="record-title">${escapeHtml(record.missionName || "Untitled flight")}</span>
+          <span class="record-meta">${escapeHtml(record.flightDate || "No date")} · ${escapeHtml(record.status || "Draft")}</span>
+        `;
+        button.addEventListener("click", () => {
+          saveCurrent(false);
+          currentId = record.id;
+          renderAll();
+        });
+        recordList.appendChild(button);
+      });
+    }
+
+    function updateSummary() {
+      const record = readForm();
+      const missing = requiredFields.filter(([key]) => !record[key]);
+      const completed = requiredFields.length - missing.length;
+      const percent = Math.round((completed / requiredFields.length) * 100);
+
+      recordStatus.textContent = record.status || "Draft";
+      recordStatus.className = `pill${record.status === "Ready" || record.status === "Emailed" ? " good" : ""}`;
+      completionPill.textContent = `${percent}% complete`;
+      completionPill.className = `pill${percent === 100 ? " good" : " warn"}`;
+      requiredCount.textContent = `${completed}/${requiredFields.length}`;
+      recordCount.textContent = String(records.length);
+      lastSaved.textContent = record.updatedAt ? new Date(record.updatedAt).toLocaleString() : "Never";
+      autoSaveText.textContent = `Saved locally · ${records.length} record${records.length === 1 ? "" : "s"}`;
+
+      missingList.innerHTML = "";
+      missing.slice(0, 8).forEach(([, label]) => {
+        const item = document.createElement("li");
+        item.textContent = label;
+        missingList.appendChild(item);
+      });
+      if (!missing.length) {
+        const item = document.createElement("li");
+        item.textContent = "Required fields are complete.";
+        item.style.color = "var(--accent)";
+        missingList.appendChild(item);
+      }
+    }
+
+    function setCurrentDateTime(endOnly) {
+      const now = new Date();
+      const date = now.toISOString().slice(0, 10);
+      const time = now.toTimeString().slice(0, 5);
+      if (!endOnly) {
+        setField("flightDate", date);
+        if (!getField("startTime")) setField("startTime", time);
+        if (!getField("timeZone")) setField("timeZone", Intl.DateTimeFormat().resolvedOptions().timeZone || "");
+      } else {
+        setField("endTime", time);
+      }
+    }
+
+    function getLocation() {
+      if (!navigator.geolocation) {
+        showNotice("Location is not available in this browser.");
+        return;
+      }
+      showNotice("Requesting location permission.");
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        setField("latitude", latitude.toFixed(6));
+        setField("longitude", longitude.toFixed(6));
+        setField("locationAccuracy", `${Math.round(accuracy)} m`);
+        saveCurrent(false);
+        showNotice("Location captured. Weather lookup will run next.");
+        await fetchWeather();
+      }, () => {
+        showNotice("Location was not captured. You can enter address or coordinates manually.");
+      }, {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 60000
+      });
+    }
+
+    async function fetchWeather() {
+      const lat = getField("latitude");
+      const lon = getField("longitude");
+      if (!lat || !lon) {
+        showNotice("Add latitude and longitude first, or use Get location.");
+        return;
+      }
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lon)}&current=temperature_2m,wind_speed_10m,wind_gusts_10m,visibility,cloud_cover&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Weather request failed");
+        const data = await response.json();
+        const current = data.current || {};
+        if (current.temperature_2m !== undefined) setField("temperature", `${current.temperature_2m} F`);
+        if (current.wind_speed_10m !== undefined) {
+          const gust = current.wind_gusts_10m !== undefined ? `, gust ${current.wind_gusts_10m} mph` : "";
+          setField("wind", `${current.wind_speed_10m} mph${gust}`);
+        }
+        if (current.visibility !== undefined) setField("visibility", `${Math.round(current.visibility / 1609.344)} sm`);
+        if (current.cloud_cover !== undefined) setField("clouds", `${current.cloud_cover}% cloud cover`);
+        saveCurrent(true);
+        showNotice("Weather fields updated from current coordinates.");
+      } catch (error) {
+        showNotice("Weather could not be fetched. Enter weather manually.");
+      }
+    }
+
+    function calculateDuration() {
+      const start = getField("startTime");
+      const end = getField("endTime");
+      if (!start || !end) return;
+      const [startHour, startMinute] = start.split(":").map(Number);
+      const [endHour, endMinute] = end.split(":").map(Number);
+      let minutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+      if (minutes < 0) minutes += 1440;
+      setField("duration", `${minutes} min`);
+    }
+
+    function updateReport() {
+      reportPreview.value = buildReport(readForm());
+    }
+
+    function buildReport(record) {
+      const yesNo = (value) => value ? "Yes" : "No";
+      const lines = [
+        "PART 107 COMMERCIAL FLIGHT RECORD",
+        "",
+        `Mission: ${record.missionName || ""}`,
+        `Status: ${record.status || ""}`,
+        `Client: ${record.client || ""}`,
+        `Client reference: ${record.clientRef || ""}`,
+        `Purpose: ${record.purpose || ""}`,
+        "",
+        "Flight basics",
+        `Date: ${record.flightDate || ""}`,
+        `Start: ${record.startTime || ""}`,
+        `End: ${record.endTime || ""}`,
+        `Time zone: ${record.timeZone || ""}`,
+        `Takeoff: ${record.takeoffLocation || ""}`,
+        `Landing: ${record.landingLocation || ""}`,
+        `Coordinates: ${record.latitude || ""}, ${record.longitude || ""}`,
+        `Location accuracy: ${record.locationAccuracy || ""}`,
+        "",
+        "Pilot and crew",
+        `RPIC: ${record.rpicName || ""}`,
+        `Part 107 certificate: ${record.certificateNumber || ""}`,
+        `Controls: ${record.controlOperator || record.rpicName || ""}`,
+        `Visual observer: ${record.visualObserver || ""}`,
+        `Crew briefed: ${yesNo(record.crewBriefed)}`,
+        `Emergency procedures reviewed: ${yesNo(record.emergencyPlanReviewed)}`,
+        `Crew notes: ${record.crewNotes || ""}`,
+        "",
+        "Aircraft",
+        `Drone: ${record.droneModel || ""}`,
+        `FAA registration: ${record.faaRegistration || ""}`,
+        `Aircraft serial: ${record.aircraftSerial || ""}`,
+        `Remote ID: ${record.remoteIdSerial || ""}`,
+        `Remote ID method: ${record.remoteIdMethod || ""}`,
+        `Payload: ${record.payload || ""}`,
+        `Battery IDs: ${record.batteryIds || ""}`,
+        `Launch battery: ${record.launchBattery || ""}`,
+        `Aircraft safe: ${yesNo(record.aircraftSafe)}`,
+        `Control link checked: ${yesNo(record.controlLinkChecked)}`,
+        `Payload secure: ${yesNo(record.payloadSecure)}`,
+        "",
+        "Airspace and limits",
+        `Airspace class: ${record.airspaceClass || ""}`,
+        `Authorization required: ${record.authorizationRequired || ""}`,
+        `Authorization number: ${record.authorizationNumber || ""}`,
+        `Waiver used: ${record.waiverUsed || ""}`,
+        `Max altitude AGL: ${record.maxAltitude || ""}`,
+        `Nearby airport/heliport: ${record.nearbyAirport || ""}`,
+        `Operation type: ${record.operationType || ""}`,
+        `TFR/NOTAM checked: ${yesNo(record.tfrChecked)}`,
+        `Airspace checked: ${yesNo(record.airspaceChecked)}`,
+        `Airspace notes: ${record.airspaceNotes || ""}`,
+        "",
+        "Weather and site risk",
+        `Wind: ${record.wind || ""}`,
+        `Visibility: ${record.visibility || ""}`,
+        `Clouds/ceiling: ${record.clouds || ""}`,
+        `Temperature: ${record.temperature || ""}`,
+        `Weather acceptable: ${yesNo(record.weatherAcceptable)}`,
+        `Hazards: ${record.hazards || ""}`,
+        `Emergency landing area: ${record.emergencyLanding || ""}`,
+        "",
+        "Outcome",
+        `Duration: ${record.duration || ""}`,
+        `Max distance: ${record.maxDistance || ""}`,
+        `VLOS maintained: ${yesNo(record.vlosMaintained)}`,
+        `Media captured: ${record.mediaCaptured || ""}`,
+        `Landing battery: ${record.landingBattery || ""}`,
+        `Abnormal events: ${record.abnormalEvents || ""}`,
+        `Maintenance or defects: ${record.maintenanceNotes || ""}`,
+        `FAA accident report may be needed: ${yesNo(record.accidentReportNeeded)}`,
+        "",
+        `Record ID: ${record.id}`,
+        `Created: ${record.createdAt || ""}`,
+        `Updated: ${record.updatedAt || ""}`
+      ];
+      return lines.join("\n");
+    }
+
+    async function copyReport() {
+      saveCurrent(false);
+      try {
+        await navigator.clipboard.writeText(reportPreview.value);
+        showNotice("Report copied.");
+      } catch (error) {
+        reportPreview.select();
+        document.execCommand("copy");
+        showNotice("Report selected and copied if the browser allowed it.");
+      }
+    }
+
+    function downloadReport() {
+      saveCurrent(false);
+      const record = readForm();
+      const filename = slug(record.missionName || "part107-flight-record") + ".txt";
+      downloadFile(filename, reportPreview.value, "text/plain");
+    }
+
+    function emailReport() {
+      saveCurrent(false);
+      const record = readForm();
+      const email = storageEmail.value.trim();
+      if (!email) {
+        showNotice("Add a storage email first.");
+        storageEmail.focus();
+        return;
+      }
+      const subject = `Part 107 flight record - ${record.missionName || record.flightDate || "Flight"}`;
+      const body = reportPreview.value;
+      const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailto;
+      setField("status", "Emailed");
+      saveCurrent(false);
+      showNotice("Email draft prepared. Review and send it from your email app.");
+    }
+
+    function exportJson() {
+      saveCurrent(false);
+      downloadFile("part107-flight-records.json", JSON.stringify({ exportedAt: new Date().toISOString(), records }, null, 2), "application/json");
+    }
+
+    function exportCsv() {
+      saveCurrent(false);
+      const columns = [
+        "missionName", "status", "flightDate", "startTime", "endTime", "client", "purpose",
+        "takeoffLocation", "latitude", "longitude", "rpicName", "certificateNumber",
+        "droneModel", "faaRegistration", "remoteIdSerial", "airspaceClass",
+        "authorizationRequired", "authorizationNumber", "maxAltitude", "wind",
+        "visibility", "hazards", "abnormalEvents", "accidentReportNeeded", "updatedAt"
+      ];
+      const csv = [
+        columns.join(","),
+        ...records.map((record) => columns.map((key) => csvCell(record[key])).join(","))
+      ].join("\n");
+      downloadFile("part107-flight-records.csv", csv, "text/csv");
+    }
+
+    async function importJson(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        const incoming = Array.isArray(parsed) ? parsed : parsed.records;
+        if (!Array.isArray(incoming)) throw new Error("No records array");
+        const byId = new Map(records.map((record) => [record.id, record]));
+        incoming.forEach((record) => {
+          if (record && record.id) byId.set(record.id, record);
+        });
+        records = Array.from(byId.values()).sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+        currentId = records[0].id;
+        persist();
+        renderAll();
+        showNotice("Records imported.");
+      } catch (error) {
+        showNotice("Import failed. Use a JSON export from this app.");
+      } finally {
+        event.target.value = "";
+      }
+    }
+
+    function setField(name, value) {
+      const field = document.querySelector(`[data-field="${name}"]`);
+      if (!field) return;
+      if (field.type === "checkbox") field.checked = Boolean(value);
+      else field.value = value;
+    }
+
+    function getField(name) {
+      const field = document.querySelector(`[data-field="${name}"]`);
+      if (!field) return "";
+      return field.type === "checkbox" ? field.checked : field.value.trim();
+    }
+
+    function downloadFile(filename, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function csvCell(value) {
+      const text = value === undefined || value === null ? "" : String(value);
+      return `"${text.replaceAll('"', '""')}"`;
+    }
+
+    function slug(value) {
+      return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "part107-flight-record";
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[char]));
+    }
+
+    function showNotice(message) {
+      notice.textContent = message;
+      notice.classList.add("show");
+      clearTimeout(showNotice.timer);
+      showNotice.timer = setTimeout(() => notice.classList.remove("show"), 4500);
+    }
+  </script>
+</body>
+</html>
