@@ -4,6 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Part 107 Flight Record</title>
+  <meta name="description" content="Part 107 drone flight records, invoices, and payment requests.">
+  <meta name="theme-color" content="#0c6b58">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Flight Record">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" href="icons/icon-192.png">
   <style>
     :root {
       --bg: #eef2f4;
@@ -36,6 +44,7 @@
       color: var(--ink);
       background: linear-gradient(180deg, #e7eef1 0, var(--bg) 260px);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
 
     button,
@@ -1961,6 +1970,14 @@
       notice.classList.add("show");
       clearTimeout(showNotice.timer);
       showNotice.timer = setTimeout(() => notice.classList.remove("show"), 4500);
+    }
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("service-worker.js").catch(() => {
+          showNotice("Offline install support could not start in this browser.");
+        });
+      });
     }
   </script>
 </body>
