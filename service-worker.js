@@ -1,4 +1,4 @@
-const CACHE_NAME = "part107-flight-record-v2";
+const CACHE_NAME = "part107-flight-record-v3";
 const APP_FILES = [
   "./",
   "./index.html",

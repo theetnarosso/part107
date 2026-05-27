@@ -364,6 +364,56 @@
       flex: 0 0 auto;
     }
 
+    .tool-links {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+    }
+
+    .tool-link-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .tool-link-row strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 14px;
+    }
+
+    .tool-link-row span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .link-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--blue);
+      padding: 7px 11px;
+      font-size: 14px;
+      font-weight: 750;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .link-button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
     .panel {
       position: sticky;
       top: 22px;
@@ -570,6 +620,10 @@
 
       button {
         white-space: normal;
+      }
+
+      .tool-link-row {
+        grid-template-columns: 1fr;
       }
 
       .modal {
@@ -818,6 +872,22 @@
               <h2>Airspace and operating limits</h2>
             </header>
             <div class="section-body">
+              <div class="tool-links" aria-label="Airspace planning tools">
+                <div class="tool-link-row">
+                  <div>
+                    <strong>Aloft Air Control LAANC</strong>
+                    <span>Open Air Control to check controlled airspace and request LAANC authorization.</span>
+                  </div>
+                  <a class="link-button primary" href="https://air.aloft.ai/" target="_blank" rel="noopener">Open Air Control</a>
+                </div>
+                <div class="tool-link-row">
+                  <div>
+                    <strong>FAA NOTAM Search</strong>
+                    <span>Check official FAA NOTAMs before flight and record the result below.</span>
+                  </div>
+                  <a class="link-button" href="https://notams.aim.faa.gov/notamSearch/" target="_blank" rel="noopener">Check NOTAMs</a>
+                </div>
+              </div>
               <div class="grid">
                 <label class="span-3">
                   <span>Airspace class</span>
@@ -1506,6 +1576,7 @@
         `Max altitude AGL: ${record.maxAltitude || ""}`,
         `Nearby airport/heliport: ${record.nearbyAirport || ""}`,
         `Operation type: ${record.operationType || ""}`,
+        "Airspace tools: Aloft Air Control https://air.aloft.ai/ | FAA NOTAM Search https://notams.aim.faa.gov/notamSearch/",
         `TFR/NOTAM checked: ${yesNo(record.tfrChecked)}`,
         `Airspace checked: ${yesNo(record.airspaceChecked)}`,
         `Airspace notes: ${record.airspaceNotes || ""}`,
