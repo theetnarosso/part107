@@ -1,8 +1,11 @@
-const CACHE_NAME = "part107-flight-record-v1";
+const CACHE_NAME = "part107-flight-record-v2";
 const APP_FILES = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
+  "./apple-touch-icon.png",
+  "./icon.png",
+  "./favicon.ico",
   "./icons/icon-180.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
