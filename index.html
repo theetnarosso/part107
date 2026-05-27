@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Part 107 Flight Record</title>
+  <title>Part107 Log</title>
   <meta name="description" content="Part 107 drone flight records, invoices, and payment requests.">
   <meta name="theme-color" content="#0c6b58">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Flight Record">
+  <meta name="apple-mobile-web-app-title" content="Part107 Log">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
@@ -178,6 +178,18 @@
       color: var(--muted);
       font-size: 14px;
       line-height: 1.4;
+    }
+
+    .build-tag {
+      display: inline-flex;
+      width: fit-content;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--muted);
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 800;
     }
 
     .toolbar,
@@ -414,6 +426,18 @@
       color: #fff;
     }
 
+    .tool-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    #pasteLaancNumber {
+      width: 100%;
+      margin-top: 22px;
+    }
+
     .panel {
       position: sticky;
       top: 22px;
@@ -640,8 +664,9 @@
   <div class="app">
     <aside>
       <div class="brand">
-        <h1>Part 107 Flight Record</h1>
+        <h1>Part107 Log</h1>
         <p>Collect commercial drone flight details, save the record locally, and prepare a clean email report.</p>
+        <span class="build-tag">iPhone build v4</span>
       </div>
 
       <div class="toolbar">
@@ -876,9 +901,12 @@
                 <div class="tool-link-row">
                   <div>
                     <strong>Aloft Air Control LAANC</strong>
-                    <span>Open Air Control to check controlled airspace and request LAANC authorization.</span>
+                    <span>Use the web LAANC flow, or open the iPhone app listing if you want the native app.</span>
                   </div>
-                  <a class="link-button primary" href="https://air.aloft.ai/" target="_blank" rel="noopener">Open Air Control</a>
+                  <div class="tool-actions">
+                    <a class="link-button primary" href="https://air.aloft.ai/" target="_blank" rel="noopener">Open web</a>
+                    <a class="link-button" href="https://apps.apple.com/app/id1472965046" target="_blank" rel="noopener">iPhone app</a>
+                  </div>
                 </div>
                 <div class="tool-link-row">
                   <div>
@@ -915,6 +943,9 @@
                   <span>Authorization number</span>
                   <input data-field="authorizationNumber" placeholder="If required">
                 </label>
+                <div class="span-3">
+                  <button type="button" id="pasteLaancNumber">Paste LAANC number</button>
+                </div>
                 <label class="span-3">
                   <span>Max altitude AGL</span>
                   <input data-field="maxAltitude" placeholder="Example: 200 ft">
@@ -1279,6 +1310,7 @@
 
     document.querySelector("#getLocation").addEventListener("click", getLocation);
     document.querySelector("#refreshWeather").addEventListener("click", fetchWeather);
+    document.querySelector("#pasteLaancNumber").addEventListener("click", pasteLaancNumber);
     document.querySelector("#copyReport").addEventListener("click", copyReport);
     document.querySelector("#downloadReport").addEventListener("click", downloadReport);
     document.querySelector("#emailReport").addEventListener("click", emailReport);
@@ -1509,6 +1541,36 @@
       }
     }
 
+    async function pasteLaancNumber() {
+      if (!navigator.clipboard?.readText) {
+        showNotice("Clipboard paste is not available. Paste the LAANC number into the field manually.");
+        return;
+      }
+      try {
+        const text = await navigator.clipboard.readText();
+        const number = extractLaancNumber(text);
+        if (!number) {
+          showNotice("No LAANC-style authorization number found in the clipboard.");
+          return;
+        }
+        setField("authorizationNumber", number);
+        setField("authorizationRequired", "Yes");
+        saveCurrent(false);
+        showNotice(`LAANC authorization number pasted: ${number}`);
+      } catch (error) {
+        showNotice("Clipboard access was blocked. Paste the LAANC number into the field manually.");
+      }
+    }
+
+    function extractLaancNumber(text) {
+      const cleaned = String(text || "").trim();
+      if (!cleaned) return "";
+      const labeled = cleaned.match(/(?:laanc\s*)?(?:authorization|approval|auth)(?:\s*(?:number|no\.?|#|id))?\s*[:#-]\s*([A-Z0-9][A-Z0-9-]{4,})/i);
+      if (labeled) return labeled[1].replace(/[^A-Z0-9-]/gi, "").toUpperCase();
+      const standalone = cleaned.match(/\b[A-Z0-9]{2,}(?:-[A-Z0-9]{2,}){1,}\b/i) || cleaned.match(/\b[A-Z0-9]{6,}\b/i);
+      return standalone ? standalone[0].toUpperCase() : "";
+    }
+
     function calculateDuration() {
       const start = getField("startTime");
       const end = getField("endTime");
@@ -1576,7 +1638,7 @@
         `Max altitude AGL: ${record.maxAltitude || ""}`,
         `Nearby airport/heliport: ${record.nearbyAirport || ""}`,
         `Operation type: ${record.operationType || ""}`,
-        "Airspace tools: Aloft Air Control https://air.aloft.ai/ | FAA NOTAM Search https://notams.aim.faa.gov/notamSearch/",
+        "Airspace tools: Aloft Air Control web https://air.aloft.ai/ | iPhone app https://apps.apple.com/app/id1472965046 | FAA NOTAM Search https://notams.aim.faa.gov/notamSearch/",
         `TFR/NOTAM checked: ${yesNo(record.tfrChecked)}`,
         `Airspace checked: ${yesNo(record.airspaceChecked)}`,
         `Airspace notes: ${record.airspaceNotes || ""}`,
